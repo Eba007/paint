@@ -17,10 +17,10 @@ namespace paint
         private bool draw = false;
         private int x, y;
 
-        private string tool = "free";      // free | line | rect
-        private Shape current;             // одоо чирж буй дүрс
+        private string tool = "free";      // free | line | rect | ellipse | arc | polygon | pie
+        private PaintShape current;             // одоо чирж буй дүрс
 
-        private ToolStripMenuItem freeItem, lineItem, rectItem;
+        private ToolStripMenuItem freeItem, lineItem, rectItem, ellipseItem, arcItem, pieItem, polyItem;
 
         private List<Bitmap> undoList = new List<Bitmap>();
         private List<Bitmap> redoList = new List<Bitmap>();
@@ -65,16 +65,21 @@ namespace paint
         //  ЦЭС ХОЛБОХ
         // =====================================================
 
-        // Tools болон Graphic цэс (Designer-т байвал ашиглана, байхгүй бол үүсгэнэ)
         private void BuildToolMenus()
         {
             freeItem = GetOrCreate("freeToolStripMenuItem", "Чөлөөт", "Tools", (s, e) => SetTool("free"));
             lineItem = GetOrCreate("customizeToolStripMenuItem", "Шулуун", "Tools", (s, e) => SetTool("line"));
             rectItem = GetOrCreate("optionsToolStripMenuItem", "Тэгш өнцөгт", "Tools", (s, e) => SetTool("rect"));
+            ellipseItem = GetOrCreate("ellipseToolStripMenuItem", "Дугуй", "Tools", (s, e) => SetTool("ellipse"));
+            arcItem = GetOrCreate("arcToolStripMenuItem", "Нум", "Tools", (s, e) => SetTool("arc"));
+            polyItem = GetOrCreate("polygonToolStripMenuItem", "Олон талт дүрс", "Tools", (s, e) => SetTool("polygon"));
+            pieItem = GetOrCreate("pieToolStripMenuItem", "Дугуй график", "Tools", (s, e) => SetTool("pie"));
             GetOrCreate("clearToolStripMenuItem", "Clear", "Graphic", (s, e) => ClearCanvas());
+
+            // Дасгал №2 (ShapeApp) цонхыг нээнэ
+            GetOrCreate("shapeLabToolStripMenuItem", "Дасгал №2", "Tools", (s, e) => new ShapeApp.MainForm().Show());
         }
 
-        // File, Edit, Help дахь стандарт цэсийн мөрүүдийг ажилладаг болгоно
         private void WireStandardMenus()
         {
             // File
@@ -124,7 +129,6 @@ namespace paint
             return it is ToolStripDropDownItem d && d.HasDropDownItems;
         }
 
-        // Нэрээр эсвэл текстээр нь цэсний мөрийг олж Click-ийг холбоно
         private void Wire(Action action, string name, params string[] texts)
         {
             foreach (ToolStripItem it in AllItems(menuStrip1.Items))
@@ -175,10 +179,26 @@ namespace paint
 
         private void SetTool(string t)
         {
+            FinishPolygon();            // дуусаагүй олон талт дүрс байвал дуусгана
             tool = t;
             freeItem.Checked = (t == "free");
             lineItem.Checked = (t == "line");
             rectItem.Checked = (t == "rect");
+            ellipseItem.Checked = (t == "ellipse");
+            arcItem.Checked = (t == "arc");
+            polyItem.Checked = (t == "polygon");
+            pieItem.Checked = (t == "pie");
+        }
+
+        private void FinishPolygon()
+        {
+            PPolygon poly = current as PPolygon;
+            if (poly == null) return;
+
+            poly.Closed = true;
+            if (poly.Points.Count >= 2) poly.Draw(g);
+            current = null;
+            this.Invalidate();
         }
 
         // =====================================================
@@ -210,7 +230,6 @@ namespace paint
             EnsureSize(this.ClientSize.Width, this.ClientSize.Height);
         }
 
-        // Цэс, хэрэгслийн мөрийн доорх зурах талбайн зураг
         private Bitmap GetCanvasImage()
         {
             int top = toolStrip1.Bottom;
@@ -282,7 +301,7 @@ namespace paint
                         g.Clear(Color.White);
                         g.DrawImage(tmp, 0, top, tmp.Width, tmp.Height);
                     }
-                    currentFile = null;   // анхны файлыг дарж бичихээс сэргийлнэ
+                    currentFile = null;
                     this.Invalidate();
                 }
                 catch (Exception ex)
@@ -447,12 +466,13 @@ namespace paint
         private void ShowHelp()
         {
             MessageBox.Show(
-                "Tools цэс: Чөлөөт, Шулуун, Тэгш өнцөгт горим сонгоно.\n" +
+                "Tools цэс: Чөлөөт, Шулуун, Тэгш өнцөгт, Дугуй, Нум, Олон талт дүрс, Дугуй график.\n" +
+                "Олон талт дүрс: зүүн click = орой нэмэх, баруун click = дуусгах.\n" +
                 "Өнгө цэс: үзгийн өнгө сонгоно.\n" +
                 "Баруун дээд тоо: үзгийн өргөн (1-10).\n" +
-                "Graphic → Clear: зургийг цэвэрлэнэ.\n" +
-                "Edit → Undo/Redo: сүүлийн зурсныг буцаана/дахин хийнэ.\n" +
-                "File → Save: зургийг PNG, JPG, BMP болгон хадгална.",
+                "Graphic -> Clear: зургийг цэвэрлэнэ.\n" +
+                "Edit -> Undo/Redo: сүүлийн зурсныг буцаана/дахин хийнэ.\n" +
+                "File -> Save: зургийг PNG, JPG, BMP болгон хадгална.",
                 "Тусламж");
         }
 
@@ -490,6 +510,33 @@ namespace paint
 
         private void Form1_MouseDown(object sender, MouseEventArgs e)
         {
+            // Олон талт дүрс: зүүн click = орой нэмэх, баруун click = дуусгах
+            if (tool == "polygon")
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    FinishPolygon();
+                    return;
+                }
+                if (e.Button != MouseButtons.Left) return;
+
+                selectAll = false;
+                PPolygon poly = current as PPolygon;
+                if (poly == null)
+                {
+                    PushUndo();
+                    poly = new PPolygon(p.Color, p.Width, e.Location);
+                    current = poly;
+                }
+                else
+                {
+                    poly.Points.Add(e.Location);
+                }
+                poly.End = e.Location;
+                this.Invalidate();
+                return;
+            }
+
             if (e.Button != MouseButtons.Left) return;
 
             selectAll = false;
@@ -501,14 +548,11 @@ namespace paint
                 x = e.X;
                 y = e.Y;
             }
-            else if (tool == "line")
-            {
-                current = new LineDraw(p.Color, p.Width, e.Location);
-            }
-            else if (tool == "rect")
-            {
-                current = new RectDraw(p.Color, p.Width, e.Location);
-            }
+            else if (tool == "line") current = new PLine(p.Color, p.Width, e.Location);
+            else if (tool == "rect") current = new PRect(p.Color, p.Width, e.Location);
+            else if (tool == "ellipse") current = new PEllipse(p.Color, p.Width, e.Location);
+            else if (tool == "arc") current = new PArc(p.Color, p.Width, e.Location);
+            else if (tool == "pie") current = new PPie(p.Color, p.Width, e.Location);
         }
 
         private void Form1_MouseMove(object sender, MouseEventArgs e)
@@ -531,7 +575,7 @@ namespace paint
         {
             draw = false;
 
-            if (current != null)
+            if (current != null && !(current is PPolygon))
             {
                 current.End = e.Location;
                 current.Draw(g);               // Bitmap дээр бүрмөсөн зурна
