@@ -54,6 +54,7 @@
             toolsToolStripMenuItem = new ToolStripMenuItem();
             customizeToolStripMenuItem = new ToolStripMenuItem();
             optionsToolStripMenuItem = new ToolStripMenuItem();
+            colorToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             contentsToolStripMenuItem = new ToolStripMenuItem();
             indexToolStripMenuItem = new ToolStripMenuItem();
@@ -62,7 +63,6 @@
             aboutToolStripMenuItem = new ToolStripMenuItem();
             numericUpDown1 = new NumericUpDown();
             colorDialog1 = new ColorDialog();
-            colorToolStripMenuItem = new ToolStripMenuItem();
             toolStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericUpDown1).BeginInit();
@@ -338,14 +338,21 @@
             // customizeToolStripMenuItem
             // 
             customizeToolStripMenuItem.Name = "customizeToolStripMenuItem";
-            customizeToolStripMenuItem.Size = new Size(180, 22);
+            customizeToolStripMenuItem.Size = new Size(130, 22);
             customizeToolStripMenuItem.Text = "&Customize";
             // 
             // optionsToolStripMenuItem
             // 
             optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            optionsToolStripMenuItem.Size = new Size(180, 22);
+            optionsToolStripMenuItem.Size = new Size(130, 22);
             optionsToolStripMenuItem.Text = "&Options";
+            // 
+            // colorToolStripMenuItem
+            // 
+            colorToolStripMenuItem.Name = "colorToolStripMenuItem";
+            colorToolStripMenuItem.Size = new Size(130, 22);
+            colorToolStripMenuItem.Text = "color";
+            colorToolStripMenuItem.Click += colorToolStripMenuItem_Click;
             // 
             // helpToolStripMenuItem
             // 
@@ -385,18 +392,11 @@
             // 
             // numericUpDown1
             // 
-            numericUpDown1.Location = new Point(484, 89);
+            numericUpDown1.Location = new Point(657, 52);
             numericUpDown1.Name = "numericUpDown1";
             numericUpDown1.Size = new Size(120, 23);
             numericUpDown1.TabIndex = 2;
             numericUpDown1.ValueChanged += numericUpDown1_ValueChanged;
-            // 
-            // colorToolStripMenuItem
-            // 
-            colorToolStripMenuItem.Name = "colorToolStripMenuItem";
-            colorToolStripMenuItem.Size = new Size(180, 22);
-            colorToolStripMenuItem.Text = "color";
-            colorToolStripMenuItem.Click += colorToolStripMenuItem_Click;
             // 
             // Form1
             // 
